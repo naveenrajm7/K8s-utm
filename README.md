@@ -1,4 +1,4 @@
-# Kubernetes on Mac using Vagrant UTM
+# Kubernetes on Mac using UTM
 
 Vagrant setup for a 3 node Kubernetes cluster on Mac using UTM.
 
