@@ -1,3 +1,6 @@
 .vagrant/
 
-join-command
+# Temporary files to exchange information between the host and the guest
+# and in between guests
+playbooks/join-command
+playbooks/ip_address

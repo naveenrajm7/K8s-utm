@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
     master.trigger.before :provisioner_run, type: :hook do |trigger|
       trigger.info = "Retrieving the IP address of the machine"
       trigger.ruby do |env, machine|
-        $ip_address = `utmctl ip-address #{machine.id} | head -n 1 > ip_address && cat ip_address`.lines.first.strip
+        $ip_address = `utmctl ip-address #{machine.id} | head -n 1 > playbooks/ip_address && cat playbooks/ip_address`.lines.first.strip
         puts "The IP address of the machine is: #{$ip_address}"
       end
     end
