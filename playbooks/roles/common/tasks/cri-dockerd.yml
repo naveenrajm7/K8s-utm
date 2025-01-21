@@ -1,0 +1,97 @@
+---
+- name: Download cri-dockerd tarball for ARM64
+  get_url:
+    url: https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.16/cri-dockerd-0.3.16.arm64.tgz
+    dest: /tmp/cri-dockerd.arm64.tgz
+
+- name: Extract cri-dockerd binary
+  unarchive:
+    src: /tmp/cri-dockerd.arm64.tgz
+    dest: /usr/local/bin/
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Verify cri-dockerd installation
+  command: /usr/local/bin/cri-dockerd --version
+  register: cri_dockerd_version
+  changed_when: false
+
+- name: Display cri-dockerd version
+  debug:
+    msg: "cri-dockerd version installed: {{ cri_dockerd_version.stdout }}"
+
+- name: Create systemd service for cri-dockerd
+  copy:
+    dest: /etc/systemd/system/cri-docker.service
+    content: |
+      [Unit]
+      Description=CRI Interface for Docker Application Container Engine
+      Documentation=https://docs.mirantis.com
+      After=network-online.target firewalld.service docker.service
+      Wants=network-online.target
+      Requires=cri-docker.socket
+
+      [Service]
+      Type=notify
+      ExecStart=/usr/local/bin/cri-dockerd --container-runtime-endpoint fd://
+      ExecReload=/bin/kill -s HUP $MAINPID
+      TimeoutSec=0
+      RestartSec=2
+      Restart=always
+
+      # Note that StartLimit* options were moved from "Service" to "Unit" in systemd 229.
+      # Both the old, and new location are accepted by systemd 229 and up, so using the old location
+      # to make them work for either version of systemd.
+      StartLimitBurst=3
+
+      # Note that StartLimitInterval was renamed to StartLimitIntervalSec in systemd 230.
+      # Both the old, and new name are accepted by systemd 230 and up, so using the old name to make
+      # this option work for either version of systemd.
+      StartLimitInterval=60s
+
+      # Having non-zero Limit*s causes performance problems due to accounting overhead
+      # in the kernel. We recommend using cgroups to do container-local accounting.
+      LimitNOFILE=infinity
+      LimitNPROC=infinity
+      LimitCORE=infinity
+
+      # Comment TasksMax if your systemd version does not support it.
+      # Only systemd 226 and above support this option.
+      TasksMax=infinity
+      Delegate=yes
+      KillMode=process
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Create systemd socket for cri-dockerd
+  copy:
+    dest: /etc/systemd/system/cri-docker.socket
+    content: |
+      [Unit]
+      Description=CRI Docker Socket for the API
+      PartOf=cri-docker.service
+
+      [Socket]
+      ListenStream=%t/cri-dockerd.sock
+      SocketMode=0660
+      SocketUser=root
+      SocketGroup=docker
+
+      [Install]
+      WantedBy=sockets.target
+
+- name: Reload systemd to register cri-dockerd service
+  systemd:
+    daemon_reload: yes
+
+- name: Enable cri-docker.service
+  systemd:
+    name: cri-docker.service
+    enabled: yes
+
+- name: Enable and start cri-docker.socket
+  systemd:
+    name: cri-docker.socket
+    enabled: yes
+    state: started

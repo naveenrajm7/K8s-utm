@@ -1,0 +1,104 @@
+# Package: prerequisites
+- name: Install packages that allow apt to be used over HTTPS
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gpg
+
+# Install Docker
+- name: Add an apt signing key for Docker
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: Add apt repository for stable version
+  apt_repository:
+    repo: deb [arch=arm64] https://download.docker.com/linux/debian bookworm stable
+    state: present
+
+- name: Install docker and its dependecies
+  apt: 
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - docker-ce 
+    - docker-ce-cli 
+    - containerd.io
+  notify:
+    - docker status
+
+- name: Configure systemd as cgroup driver for docker
+  copy:
+    dest: "/etc/docker/daemon.json"
+    content: |
+      {
+        "exec-opts": ["native.cgroupdriver=systemd"]
+      }
+
+- name: Restart docker
+  service:
+    name: docker
+    daemon_reload: yes
+    state: restarted
+
+- name: Add vagrant user to docker group
+  user:
+    name: vagrant
+    group: docker
+
+- include_tasks: cri-dockerd.yml
+
+# Swap configuration
+- name: Remove swapfile from /etc/fstab
+  mount:
+    name: "{{ item }}"
+    fstype: swap
+    state: absent
+  with_items:
+    - swap
+    - none
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+# Installing a container runtime
+# Docker , cri-dockerd
+
+# Installing kubeadm, kubelet and kubectl
+- name: Add an apt signing key for Kubernetes
+  apt_key:
+    url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+    keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    state: present
+
+- name: Adding apt repository for Kubernetes
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
+    state: present
+    filename: kubernetes.list
+
+- name: Install Kubernetes binaries
+  apt: 
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+      - kubelet 
+      - kubeadm 
+      - kubectl
+
+- name: Restart kubelet
+  service:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted

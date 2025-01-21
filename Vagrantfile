@@ -15,12 +15,13 @@ Vagrant.configure("2") do |config|
     master.vm.box = IMAGE_NAME
     
     master.vm.hostname = "k8s-master"
-    # master.vm.provision "ansible" do |ansible|
-    #   ansible.playbook = "playbooks/master-playbook.yml"
-    #   ansible.extra_vars = {
-    #       node_ip: "192.168.50.10",
-    #   }
-    # end
+    master.vm.provision "ansible" do |ansible|
+      ansible.compatibility_mode = "2.0"
+      ansible.playbook = "playbooks/master-playbook.yml"
+      ansible.extra_vars = {
+          node_ip: "192.168.75.108",
+      }
+    end
   end
 
   (1..N).each do |i|
@@ -28,12 +29,13 @@ Vagrant.configure("2") do |config|
       node.vm.box = IMAGE_NAME
 
       node.vm.hostname = "node-#{i}"
-      # node.vm.provision "ansible" do |ansible|
-      #   ansible.playbook = "playbooks/node-playbook.yml"
-      #   ansible.extra_vars = {
-      #       node_ip: "192.168.50.#{i + 10}",
-      #   }
-      # end
+      node.vm.provision "ansible" do |ansible|
+        ansible.compatibility_mode = "2.0"
+        ansible.playbook = "playbooks/node-playbook.yml"
+        ansible.extra_vars = {
+            node_ip: "192.168.75.#{i + 108}",
+        }
+      end
     end
   end
 end
