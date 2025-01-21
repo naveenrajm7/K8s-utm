@@ -6,8 +6,12 @@
     import_role:
       name: common
 
+  - name: Debug node_ip
+    debug:
+      msg: "The node_ip is {{ node_ip }}, used as advertise address"
+
   - name: Initialize the Kubernetes cluster using kubeadm
-    command: kubeadm init --apiserver-advertise-address="192.168.75.108" --apiserver-cert-extra-sans="192.168.75.108"  --node-name k8s-master --pod-network-cidr=192.168.0.0/16 --cri-socket=unix:///var/run/cri-dockerd.sock
+    command: "kubeadm init --apiserver-advertise-address={{ node_ip }} --apiserver-cert-extra-sans={{ node_ip }}  --node-name k8s-master --pod-network-cidr=192.168.0.0/16 --cri-socket=unix:///var/run/cri-dockerd.sock"
 
   - name: Setup kubeconfig for vagrant user
     command: "{{ item }}"

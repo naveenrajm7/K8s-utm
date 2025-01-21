@@ -15,11 +15,21 @@ Vagrant.configure("2") do |config|
     master.vm.box = IMAGE_NAME
     
     master.vm.hostname = "k8s-master"
+    # Define a trigger to run before the any provisioner
+    master.trigger.before :provisioner_run, type: :hook do |trigger|
+      trigger.info = "Retrieving the IP address of the machine"
+      trigger.ruby do |env, machine|
+        $ip_address = `utmctl ip-address #{machine.id} | head -n 1 > ip_address && cat ip_address`.lines.first.strip
+        puts "The IP address of the machine is: #{$ip_address}"
+      end
+    end
+
+
     master.vm.provision "ansible" do |ansible|
       ansible.compatibility_mode = "2.0"
       ansible.playbook = "playbooks/master-playbook.yml"
       ansible.extra_vars = {
-          node_ip: "192.168.75.108",
+        node_ip: "{{ lookup('file', 'ip_address') }}",
       }
     end
   end
@@ -32,9 +42,6 @@ Vagrant.configure("2") do |config|
       node.vm.provision "ansible" do |ansible|
         ansible.compatibility_mode = "2.0"
         ansible.playbook = "playbooks/node-playbook.yml"
-        ansible.extra_vars = {
-            node_ip: "192.168.75.#{i + 108}",
-        }
       end
     end
   end
