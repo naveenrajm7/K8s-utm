@@ -1,8 +1,8 @@
 # Kubernetes on Mac using Vagrant UTM
 
-Vagrant setup for 3 nodes Kubernetes cluster on Mac using UTM.
+Vagrant setup for a 3 node Kubernetes cluster on Mac using UTM.
 
-> adheres to offical documentation : https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
+> Adheres to official documentation : [Creating a cluster with kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 
 ## Prerequisites
 * [Vagrant](https://www.vagrantup.com/)
